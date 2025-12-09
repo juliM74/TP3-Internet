@@ -2,7 +2,7 @@ package lista_test
 
 import (
 	"testing"
-	TDAlista "tp2/tdas/lista"
+	TDAlista "tp3/tdaGrafo/tdas/lista"
 
 	"github.com/stretchr/testify/require"
 )
