@@ -1,0 +1,16 @@
+listar_operaciones
+camino Argentina,Zinedine Zidane
+camino Jeremy Irons,pejerrey
+mas_importantes 20
+conectados Boca Juniors
+ciclo Jeremy Irons,4
+ciclo Polonia,20
+lectura Buenos Aires,Roma
+lectura Hockey sobre hielo,Roma,Japón,árbol,Guerra,Dios,universo,Himalaya,otoño
+diametro
+rango Tokio,3
+comunidad Chile
+navegacion Argentina
+navegacion Brasil
+clustering Club Atlético River Plate
+clustering

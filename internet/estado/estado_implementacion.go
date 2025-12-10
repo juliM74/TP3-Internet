@@ -6,7 +6,7 @@ import (
 	TDADiccionario "tp3/tdaGrafo/tdas/hash/diccionario"
 )
 
-// =============================  IMPLEMENTACIÓN DEL TDA ESTADO  =============================
+// =============================  IMPLEMENTACI0N DEL TDA ESTADO  =============================
 
 type estadoConcreto struct {
 	grafo grafo.Grafo[string, int]

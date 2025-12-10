@@ -80,7 +80,7 @@ func CaminoMinimo[K comparable, W any](g grafo.Grafo[K, W], origen, destino K, o
 	return nil, -1
 }
 
-// CaminoMinimoBFS encuentra el camino con menos aristas (grafo sin peso).
+// CaminoMinimoBFS encuentra el camino con menos aristas
 func CaminoMinimoBFS[K comparable, W any](g grafo.Grafo[K, W], origen, destino K, cmp func(K, K) bool) []K {
 	visitados := TDADiccionario.CrearHash[K, bool](cmp)
 	padre := TDADiccionario.CrearHash[K, K](cmp)
@@ -163,7 +163,7 @@ func MSTPrim[K comparable, W any](g grafo.Grafo[K, W], obtenerPeso func(W) int, 
 
 // ========================= ALGORITMOS DE ORDEN Y RANKING =========================
 
-// OrdenTopologico devuelve un orden de ejecución válido. Retorna false si hay ciclo.
+// OrdenTopologico devuelve un orden de ejecucion valido. Retorna false si hay ciclo.
 func OrdenTopologico[K comparable, W any](g grafo.Grafo[K, W], cmp func(K, K) bool) ([]K, bool) {
 	grados := TDADiccionario.CrearHash[K, int](cmp)
 	cola := TDACola.CrearColaEnlazada[K]()
@@ -201,11 +201,11 @@ func OrdenTopologico[K comparable, W any](g grafo.Grafo[K, W], cmp func(K, K) bo
 	return orden, true
 }
 
-// PageRank calcula la importancia de cada página. d=damping factor (0.85).
-func PageRank[K comparable, W any](g grafo.Grafo[K, W], d float64, iteraciones int, cmp func(K, K) bool) TDADiccionario.Diccionario[K, float64] {
+// PageRank calcula la importancia de cada pagina
+func PageRank[K comparable, W any](g grafo.Grafo[K, W], d float64, iteraciones int, _ func(K, K) bool) TDADiccionario.Diccionario[K, float64] {
 	vertices := g.Vertices()
 	n := float64(len(vertices))
-	pr := TDADiccionario.CrearHash[K, float64](cmp)
+	pr := TDADiccionario.CrearHash[K, float64](sonIguales)
 	base := (1.0 - d) / n
 
 	for _, v := range vertices {
@@ -213,18 +213,24 @@ func PageRank[K comparable, W any](g grafo.Grafo[K, W], d float64, iteraciones i
 	}
 
 	for i := 0; i < iteraciones; i++ {
-		prAux := TDADiccionario.CrearHash[K, float64](cmp)
+		prAux := TDADiccionario.CrearHash[K, float64](sonIguales)
 		for _, v := range vertices {
 			prAux.Guardar(v, base)
 		}
 
 		for _, v := range vertices {
+			if !pr.Pertenece(v) {
+				continue
+			}
 			vecinos := g.ObtenerVecinos(v)
 			cant := float64(len(vecinos))
+
 			if cant > 0 {
 				aporte := (pr.Obtener(v) * d) / cant
 				for _, w := range vecinos {
-					prAux.Guardar(w, prAux.Obtener(w)+aporte)
+					if prAux.Pertenece(w) {
+						prAux.Guardar(w, prAux.Obtener(w)+aporte)
+					}
 				}
 			}
 		}
@@ -272,13 +278,14 @@ func CFCSoloDe[K comparable, W any](g grafo.Grafo[K, W], origen K, cmp func(K, K
 	return nil
 }
 
-// ComponentesFuertementeConexas implementa el algoritmo de Tarjan (con TDA Pila).
-func ComponentesFuertementeConexas[K comparable, W any](g grafo.Grafo[K, W], cmp func(K, K) bool) [][]K {
-	visitados := TDADiccionario.CrearHash[K, int](cmp)
-	masBajo := TDADiccionario.CrearHash[K, int](cmp)
-	enPila := TDADiccionario.CrearHash[K, bool](cmp)
-	pila := TDAPila.CrearPilaDinamica[K]()
+// ComponentesFuertementeConexas calcula todas las componentes fuertemente conexas del grafo.
+// Utiliza el algoritmo de Tarjan con comparacion estricta para evitar conflictos de Hash.
+func ComponentesFuertementeConexas[K comparable, W any](g grafo.Grafo[K, W], _ func(K, K) bool) [][]K {
+	visitados := TDADiccionario.CrearHash[K, int](sonIguales)
+	masBajo := TDADiccionario.CrearHash[K, int](sonIguales)
+	enPila := TDADiccionario.CrearHash[K, bool](sonIguales)
 
+	pila := TDAPila.CrearPilaDinamica[K]()
 	var componentes [][]K
 	ordenGlobal := 0
 
@@ -309,7 +316,7 @@ func ComponentesFuertementeConexas[K comparable, W any](g grafo.Grafo[K, W], cmp
 				tope := pila.Desapilar()
 				enPila.Borrar(tope)
 				nuevaCFC = append(nuevaCFC, tope)
-				if cmp(tope, v) {
+				if sonIguales(tope, v) {
 					break
 				}
 			}
@@ -417,7 +424,7 @@ func ClusteringPromedio[K comparable, W any](g grafo.Grafo[K, W], cmp func(K, K)
 	return suma / float64(n)
 }
 
-// Diametro calcula el camino mínimo más largo (costoso, O(V*(V+E))).
+// Diametro calcula el camino minimo mas largo. O(V*(V+E)).
 func Diametro[K comparable, W any](g grafo.Grafo[K, W], cmp func(K, K) bool) []K {
 	var maxCamino []K
 	maxDistGlobal := -1
@@ -560,9 +567,7 @@ func PrimerLink[K comparable, W any](g grafo.Grafo[K, W], origen K, cmp func(K, 
 	return camino
 }
 
-// ============================================================================
-//                             AUXILIARES PRIVADOS
-// ============================================================================
+// ========================= AUXILIARES PRIVADOS =========================
 
 func reconstruirCamino[K comparable](padres TDADiccionario.Diccionario[K, K], origen, destino K) []K {
 	camino := []K{}
@@ -604,4 +609,10 @@ func bfsCompleto[K comparable, W any](g grafo.Grafo[K, W], origen K, cmp func(K,
 		}
 	}
 	return dist, padre, ultimo, maxDist
+}
+
+// Funcion auxiliar para uso interno de los algoritmos.
+// Garantiza consistencia con el Grafo.
+func sonIguales[K comparable](a, b K) bool {
+	return a == b
 }
