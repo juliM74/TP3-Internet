@@ -39,4 +39,9 @@ type Estado interface {
 	TieneClusteringPromedio() bool
 	GuardarClusteringPromedio(valor float64)
 	ObtenerClusteringPromedio() float64
+
+	// Diametro
+	TieneDiametro() bool
+	GuardarDiametro(camino []string)
+	ObtenerDiametro() []string
 }

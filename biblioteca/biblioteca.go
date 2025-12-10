@@ -540,6 +540,7 @@ func Lectura2am[K comparable, W any](g grafo.Grafo[K, W], paginas []K, cmp func(
 	if len(orden) != len(paginas) {
 		return nil
 	}
+	invertirLista(orden)
 	return orden
 }
 
@@ -615,4 +616,10 @@ func bfsCompleto[K comparable, W any](g grafo.Grafo[K, W], origen K, cmp func(K,
 // Garantiza consistencia con el Grafo.
 func sonIguales[K comparable](a, b K) bool {
 	return a == b
+}
+
+func invertirLista[K any](lista []K) {
+	for i, j := 0, len(lista)-1; i < j; i, j = i+1, j-1 {
+		lista[i], lista[j] = lista[j], lista[i]
+	}
 }

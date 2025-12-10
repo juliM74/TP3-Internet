@@ -26,6 +26,10 @@ type estadoConcreto struct {
 	clusteringLocal             TDADiccionario.Diccionario[string, float64]
 	clusteringPromedio          float64
 	clusteringPromedioCalculado bool
+
+	// diametro
+	diametroCache     []string
+	diametroCalculado bool
 }
 
 // Constructor
@@ -140,4 +144,18 @@ func (estado *estadoConcreto) GuardarClusteringPromedio(valor float64) {
 
 func (estado *estadoConcreto) ObtenerClusteringPromedio() float64 {
 	return estado.clusteringPromedio
+}
+
+// ---------- DIAMETRO -----------
+func (estado *estadoConcreto) TieneDiametro() bool {
+	return estado.diametroCalculado
+}
+
+func (estado *estadoConcreto) GuardarDiametro(camino []string) {
+	estado.diametroCache = camino
+	estado.diametroCalculado = true
+}
+
+func (estado *estadoConcreto) ObtenerDiametro() []string {
+	return estado.diametroCache
 }

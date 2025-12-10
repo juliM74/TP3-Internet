@@ -227,16 +227,25 @@ func ejecutarLectura(est estado.Estado, parametros string) {
 // ======================================== diametro (BFS desde todos) ========================================
 
 func ejecutarDiametro(est estado.Estado) {
+	if est.TieneDiametro() {
+		camino := est.ObtenerDiametro()
+		imprimirCaminoDiametro(camino)
+		return
+	}
 
 	camino := biblioteca.Diametro(est.Grafo(), strings.EqualFold)
+	est.GuardarDiametro(camino)
 
+	imprimirCaminoDiametro(camino)
+}
+
+func imprimirCaminoDiametro(camino []string) {
 	for i := range camino {
 		if i > 0 {
 			fmt.Print(" -> ")
 		}
 		fmt.Print(camino[i])
 	}
-
 	fmt.Println()
 	fmt.Println("Costo:", len(camino)-1)
 }
