@@ -1,0 +1,352 @@
+package utils
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+	"tp3/internet/estado"  
+	"tp3/biblioteca"
+)
+
+
+// ========================================
+//   DISPATCHER PRINCIPAL
+// ========================================
+
+func EjecutarLinea(est estado.Estado, comando string, parametros string) {
+
+	switch comando {
+
+	case "listar_operaciones":
+		ejecutarListarOperaciones()
+
+	case "camino":
+		ejecutarCamino(est, parametros)
+
+	case "mas_importantes":
+		ejecutarMasImportantes(est, parametros)
+
+	case "conectados":
+		ejecutarConectados(est, parametros)
+
+	case "ciclo":
+		ejecutarCiclo(est, parametros)
+
+	case "lectura":
+		ejecutarLectura(est, parametros)
+
+	case "diametro":
+		ejecutarDiametro(est)
+
+	case "rango":
+		ejecutarRango(est, parametros)
+
+	case "comunidad":
+		ejecutarComunidad(est, parametros)
+
+	case "navegacion":
+		ejecutarNavegacion(est, parametros)
+
+	case "clustering":
+		ejecutarClustering(est, parametros)
+
+	default:
+		fmt.Println("Comando desconocido:", comando)
+	}
+}
+
+
+
+// ========================================
+//   listar_operaciones (O(1))
+// ========================================
+
+func ejecutarListarOperaciones() {
+	fmt.Println("camino")
+	fmt.Println("mas_importantes")
+	fmt.Println("conectados")
+	fmt.Println("ciclo")
+	fmt.Println("lectura")
+	fmt.Println("diametro")
+	fmt.Println("rango")
+	fmt.Println("comunidad")
+	fmt.Println("navegacion")
+	fmt.Println("clustering")
+}
+
+
+
+// ========================================
+//   camino (BFS) ★
+// ========================================
+
+func ejecutarCamino(est estado.Estado, parametros string) {
+
+	parts := strings.Split(parametros, ",")
+	if len(parts) != 2 {
+		fmt.Println("No se encontro recorrido")
+		return
+	}
+
+	origen := strings.TrimSpace(parts[0])
+	destino := strings.TrimSpace(parts[1])
+
+	camino := biblioteca.CaminoMinimoBFS(est.Grafo(), origen, destino)
+
+	if camino == nil {
+		fmt.Println("No se encontro recorrido")
+		return
+	}
+
+	// imprimir camino
+	for i := range camino {
+		if i > 0 {
+			fmt.Print(" -> ")
+		}
+		fmt.Print(camino[i])
+	}
+	fmt.Println()
+	fmt.Println("Costo:", len(camino)-1)
+}
+
+
+
+// ========================================
+//   mas_importantes (PageRank) ★★★
+// ========================================
+
+func ejecutarMasImportantes(est estado.Estado, parametros string) {
+
+	n, err := strconv.Atoi(strings.TrimSpace(parametros))
+	if err != nil {
+		return
+	}
+
+	if !est.TienePagerank() {
+		pr := biblioteca.PageRank(est.Grafo())
+
+		for pag, val := range pr {
+			est.GuardarPagerank(pag, val)
+		}
+		est.MarcarPagerankCalculado()
+	}
+
+	top := biblioteca.TopN(est, n)
+
+	for i := range top {
+		if i > 0 {
+			fmt.Print(", ")
+		}
+		fmt.Print(top[i])
+	}
+	fmt.Println()
+}
+
+
+
+// ========================================
+//   conectados (CFC) ★★
+// ========================================
+
+func ejecutarConectados(est estado.Estado, parametros string) {
+
+	pagina := strings.TrimSpace(parametros)
+
+	if est.TieneCFC(pagina) {
+		for _, v := range est.ObtenerCFC(pagina) {
+			fmt.Println(v)
+		}
+		return
+	}
+
+	cfc := biblioteca.CFCSoloDe(est.Grafo(), pagina)
+	est.GuardarCFC(pagina, cfc)
+
+	for _, v := range cfc {
+		fmt.Println(v)
+	}
+}
+
+
+
+// ========================================
+//   ciclo (DFS bounded) ★★★
+// ========================================
+
+func ejecutarCiclo(est estado.Estado, parametros string) {
+
+	parts := strings.Split(parametros, ",")
+	if len(parts) != 2 {
+		fmt.Println("No se encontro recorrido")
+		return
+	}
+
+	pagina := strings.TrimSpace(parts[0])
+	n, _ := strconv.Atoi(strings.TrimSpace(parts[1]))
+
+	ciclo := biblioteca.CicloLargoN(est.Grafo(), pagina, n)
+
+	if ciclo == nil {
+		fmt.Println("No se encontro recorrido")
+		return
+	}
+
+	for i := range ciclo {
+		if i > 0 {
+			fmt.Print(" -> ")
+		}
+		fmt.Print(ciclo[i])
+	}
+	fmt.Println()
+}
+
+
+
+// ========================================
+//   lectura (Topo restringido) ★★
+// ========================================
+
+func ejecutarLectura(est estado.Estado, parametros string) {
+
+	parts := strings.Split(parametros, ",")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+
+	orden := biblioteca.Lectura2am(est.Grafo(), parts)
+
+	if orden == nil {
+		fmt.Println("No existe forma de leer las paginas en orden")
+		return
+	}
+
+	fmt.Println(strings.Join(orden, ", "))
+}
+
+
+
+// ========================================
+//   diametro (BFS desde todos) ★
+// ========================================
+
+func ejecutarDiametro(est estado.Estado) {
+
+	camino := biblioteca.Diametro(est.Grafo())
+
+	for i := range camino {
+		if i > 0 {
+			fmt.Print(" -> ")
+		}
+		fmt.Print(camino[i])
+	}
+
+	fmt.Println()
+	fmt.Println("Costo:", len(camino)-1)
+}
+
+
+
+// ========================================
+//   rango (BFS depth) ★
+// ========================================
+
+func ejecutarRango(est estado.Estado, parametros string) {
+
+	parts := strings.Split(parametros, ",")
+	if len(parts) != 2 {
+		return
+	}
+
+	pagina := strings.TrimSpace(parts[0])
+	n, _ := strconv.Atoi(strings.TrimSpace(parts[1]))
+
+	cant := biblioteca.CantidadEnRango(est.Grafo(), pagina, n)
+
+	fmt.Println(cant)
+}
+
+
+
+// ========================================
+//   comunidad (Label Propagation) ★★
+// ========================================
+
+func ejecutarComunidad(est estado.Estado, parametros string) {
+
+	pagina := strings.TrimSpace(parametros)
+
+	if !est.TieneComunidades() {
+		biblioteca.LabelPropagation(est)
+		est.MarcarComunidadesCalculadas()
+	}
+
+	etiq, ok := est.ObtenerEtiqueta(pagina)
+	if !ok {
+		return
+	}
+
+	est.IterarEtiquetas(func(p string, e int) {
+		if e == etiq {
+			fmt.Println(p)
+		}
+	})
+}
+
+
+
+// ========================================
+//   navegacion (Primer link) ★
+// ========================================
+
+func ejecutarNavegacion(est estado.Estado, parametros string) {
+
+	origen := strings.TrimSpace(parametros)
+
+	cam := biblioteca.PrimerLink(est.Grafo(), origen)
+
+	if len(cam) == 0 {
+		fmt.Println(origen)
+		return
+	}
+
+	fmt.Println(strings.Join(cam, " -> "))
+}
+
+
+
+// ========================================
+//   clustering (local y global) ★★
+// ========================================
+
+func ejecutarClustering(est estado.Estado, parametros string) {
+
+	param := strings.TrimSpace(parametros)
+
+	// global
+	if param == "" {
+
+		if est.TieneClusteringPromedio() {
+			fmt.Printf("%.3f\n", est.ObtenerClusteringPromedio())
+			return
+		}
+
+		val := biblioteca.ClusteringPromedio(est)
+		est.GuardarClusteringPromedio(val)
+
+		fmt.Printf("%.3f\n", val)
+		return
+	}
+
+	// local por página
+	pagina := param
+
+	if est.TieneClusteringLocal(pagina) {
+		fmt.Printf("%.3f\n", est.ObtenerClusteringLocal(pagina))
+		return
+	}
+
+	val := biblioteca.ClusteringVertice(est.Grafo(), pagina)
+	est.GuardarClusteringLocal(pagina, val)
+
+	fmt.Printf("%.3f\n", val)
+}
