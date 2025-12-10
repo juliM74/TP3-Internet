@@ -32,6 +32,9 @@ func main() {
 	for scanner.Scan() {
 
 		linea := strings.TrimSpace(scanner.Text())
+		if len(linea) == 0 || strings.HasPrefix(linea, "#") {
+			continue
+		}
 		if linea == "" {
 			continue
 		}

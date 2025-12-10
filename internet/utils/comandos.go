@@ -144,27 +144,20 @@ func ejecutarMasImportantes(est estado.Estado, parametros string) {
 // ======================================== conectados (CFC) ========================================
 
 func ejecutarConectados(est estado.Estado, parametros string) {
-
 	pagina := strings.TrimSpace(parametros)
 
-	if !est.Grafo().Pertenece(pagina) {
-		// Si no existe, no imprimimos nada
-		return
-	}
-
+	var lista []string
 	if est.TieneCFC(pagina) {
-		for _, v := range est.ObtenerCFC(pagina) {
-			fmt.Println(v)
+		lista = est.ObtenerCFC(pagina)
+	} else {
+		if !est.Grafo().Pertenece(pagina) {
+			return
 		}
-		return
+		lista = biblioteca.CFCSoloDe(est.Grafo(), pagina, strings.EqualFold)
+		est.GuardarCFC(pagina, lista)
 	}
-
-	cfc := biblioteca.CFCSoloDe(est.Grafo(), pagina, strings.EqualFold)
-	est.GuardarCFC(pagina, cfc)
-
-	for _, v := range cfc {
-		fmt.Println(v)
-	}
+	// sort.Strings(lista)
+	fmt.Println(strings.Join(lista, ", "))
 }
 
 // ======================================== ciclo ========================================
@@ -227,16 +220,25 @@ func ejecutarLectura(est estado.Estado, parametros string) {
 // ======================================== diametro (BFS desde todos) ========================================
 
 func ejecutarDiametro(est estado.Estado) {
+	if est.TieneDiametro() {
+		camino := est.ObtenerDiametro()
+		imprimirCaminoDiametro(camino)
+		return
+	}
 
 	camino := biblioteca.Diametro(est.Grafo(), strings.EqualFold)
+	est.GuardarDiametro(camino)
 
+	imprimirCaminoDiametro(camino)
+}
+
+func imprimirCaminoDiametro(camino []string) {
 	for i := range camino {
 		if i > 0 {
 			fmt.Print(" -> ")
 		}
 		fmt.Print(camino[i])
 	}
-
 	fmt.Println()
 	fmt.Println("Costo:", len(camino)-1)
 }
@@ -280,7 +282,7 @@ func ejecutarComunidad(est estado.Estado, parametros string) {
 
 	est.IterarEtiquetas(func(p string, e int) {
 		if e == etiq {
-			fmt.Println(p)
+			fmt.Printf(p + ", ")
 		}
 	})
 }
@@ -310,7 +312,6 @@ func ejecutarNavegacion(est estado.Estado, parametros string) {
 func ejecutarClustering(est estado.Estado, parametros string) {
 	param := strings.TrimSpace(parametros)
 
-	// global
 	if param == "" {
 
 		if est.TieneClusteringPromedio() {
@@ -324,8 +325,6 @@ func ejecutarClustering(est estado.Estado, parametros string) {
 		fmt.Printf("%.3f\n", val)
 		return
 	}
-
-	// local por página
 	pagina := param
 
 	if est.TieneClusteringLocal(pagina) {

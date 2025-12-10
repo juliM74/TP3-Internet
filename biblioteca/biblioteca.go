@@ -1,14 +1,14 @@
 package biblioteca
 
 import (
+	"fmt"
+	"sort"
 	grafo "tp3/tdaGrafo"
 	TDACola "tp3/tdaGrafo/tdas/cola"
 	TDAHeap "tp3/tdaGrafo/tdas/cola_prioridad"
 	TDADiccionario "tp3/tdaGrafo/tdas/hash/diccionario"
 	TDAPila "tp3/tdaGrafo/tdas/pila"
 )
-
-// ========================= ESTRUCTURAS AUXILIARES =========================
 
 type elementoDistancia[K comparable] struct {
 	vertice   K
@@ -31,8 +31,6 @@ type itemRanking[K comparable, V comparable] struct {
 	clave K
 	valor V
 }
-
-// ========================= ALGORITMOS DE CAMINOS =========================
 
 // CaminoMinimo aplica Dijkstra. Devuelve el camino y su costo total.
 // Si no hay camino, devuelve nil y -1.
@@ -214,23 +212,22 @@ func PageRank[K comparable, W any](g grafo.Grafo[K, W], d float64, iteraciones i
 
 	for i := 0; i < iteraciones; i++ {
 		prAux := TDADiccionario.CrearHash[K, float64](sonIguales)
+
 		for _, v := range vertices {
 			prAux.Guardar(v, base)
 		}
 
 		for _, v := range vertices {
-			if !pr.Pertenece(v) {
-				continue
-			}
+			valorActual := pr.Obtener(v)
+
 			vecinos := g.ObtenerVecinos(v)
 			cant := float64(len(vecinos))
 
 			if cant > 0 {
-				aporte := (pr.Obtener(v) * d) / cant
+				aporte := (valorActual * d) / cant
 				for _, w := range vecinos {
-					if prAux.Pertenece(w) {
-						prAux.Guardar(w, prAux.Obtener(w)+aporte)
-					}
+					valorPrevio := prAux.Obtener(w)
+					prAux.Guardar(w, valorPrevio+aporte)
 				}
 			}
 		}
@@ -263,8 +260,6 @@ func TopN[K comparable, V comparable](iterador func(func(K, V) bool), n int, cmp
 	return resultado
 }
 
-// ========================= CONECTIVIDAD Y COMUNIDADES =========================
-
 // CFCSoloDe devuelve la componente fuertemente conexa de un vertice especifico.
 func CFCSoloDe[K comparable, W any](g grafo.Grafo[K, W], origen K, cmp func(K, K) bool) []K {
 	todas := ComponentesFuertementeConexas(g, cmp)
@@ -281,42 +276,49 @@ func CFCSoloDe[K comparable, W any](g grafo.Grafo[K, W], origen K, cmp func(K, K
 // ComponentesFuertementeConexas calcula todas las componentes fuertemente conexas del grafo.
 // Utiliza el algoritmo de Tarjan con comparacion estricta para evitar conflictos de Hash.
 func ComponentesFuertementeConexas[K comparable, W any](g grafo.Grafo[K, W], _ func(K, K) bool) [][]K {
-	visitados := TDADiccionario.CrearHash[K, int](sonIguales)
+	visitados := TDADiccionario.CrearHash[K, bool](sonIguales)
+
+	orden := TDADiccionario.CrearHash[K, int](sonIguales)
 	masBajo := TDADiccionario.CrearHash[K, int](sonIguales)
-	enPila := TDADiccionario.CrearHash[K, bool](sonIguales)
+
+	apilados := TDADiccionario.CrearHash[K, bool](sonIguales)
 
 	pila := TDAPila.CrearPilaDinamica[K]()
-	var componentes [][]K
-	ordenGlobal := 0
 
+	var componentes [][]K
+
+	contadorGlobal := 0
 	var dfs func(K)
 	dfs = func(v K) {
-		visitados.Guardar(v, ordenGlobal)
-		masBajo.Guardar(v, ordenGlobal)
-		enPila.Guardar(v, true)
+		orden.Guardar(v, contadorGlobal)
+		masBajo.Guardar(v, contadorGlobal)
+		contadorGlobal++
+
+		visitados.Guardar(v, true)
+
 		pila.Apilar(v)
-		ordenGlobal++
+		apilados.Guardar(v, true)
 
 		for _, w := range g.ObtenerVecinos(v) {
 			if !visitados.Pertenece(w) {
 				dfs(w)
-				if masBajo.Obtener(w) < masBajo.Obtener(v) {
-					masBajo.Guardar(v, masBajo.Obtener(w))
-				}
-			} else if enPila.Pertenece(w) {
-				if visitados.Obtener(w) < masBajo.Obtener(v) {
-					masBajo.Guardar(v, visitados.Obtener(w))
+			}
+			if apilados.Pertenece(w) {
+				mbV := masBajo.Obtener(v)
+				mbW := masBajo.Obtener(w)
+				if mbW < mbV {
+					masBajo.Guardar(v, mbW)
 				}
 			}
 		}
 
-		if masBajo.Obtener(v) == visitados.Obtener(v) {
+		if orden.Obtener(v) == masBajo.Obtener(v) {
 			nuevaCFC := []K{}
 			for {
-				tope := pila.Desapilar()
-				enPila.Borrar(tope)
-				nuevaCFC = append(nuevaCFC, tope)
-				if sonIguales(tope, v) {
+				w := pila.Desapilar()
+				apilados.Borrar(w)
+				nuevaCFC = append(nuevaCFC, w)
+				if sonIguales(w, v) {
 					break
 				}
 			}
@@ -329,19 +331,28 @@ func ComponentesFuertementeConexas[K comparable, W any](g grafo.Grafo[K, W], _ f
 			dfs(v)
 		}
 	}
+
 	return componentes
 }
 
 // LabelPropagation detecta comunidades propagando etiquetas mayoritarias.
-func LabelPropagation[K comparable, W any](g grafo.Grafo[K, W], cmp func(K, K) bool) TDADiccionario.Diccionario[K, int] {
+// LabelPropagation detecta comunidades.
+// Usamos sonIguales (estricto) para el diccionario interno para evitar Pánicos.
+func LabelPropagation[K comparable, W any](g grafo.Grafo[K, W], _ func(K, K) bool) TDADiccionario.Diccionario[K, int] {
 	vertices := g.Vertices()
-	etiquetas := TDADiccionario.CrearHash[K, int](cmp)
+
+	etiquetas := TDADiccionario.CrearHash[K, int](sonIguales)
+
+	toString := func(v K) string { return fmt.Sprintf("%v", v) }
+	sort.Slice(vertices, func(i, j int) bool {
+		return toString(vertices[i]) < toString(vertices[j])
+	})
 
 	for i, v := range vertices {
 		etiquetas.Guardar(v, i)
 	}
 
-	for i := 0; i < 10; i++ { // Max 10 iteraciones
+	for i := 0; i < 15; i++ {
 		cambios := false
 		for _, v := range vertices {
 			vecinos := g.ObtenerVecinos(v)
@@ -356,9 +367,17 @@ func LabelPropagation[K comparable, W any](g grafo.Grafo[K, W], cmp func(K, K) b
 				}
 			}
 
+			// Desempate determinista
+			var etiquetasCandidatas []int
+			for e := range frecuencias {
+				etiquetasCandidatas = append(etiquetasCandidatas, e)
+			}
+			sort.Ints(etiquetasCandidatas)
+
 			maxFrec := -1
 			mejorEtiqueta := -1
-			for etiq, frec := range frecuencias {
+			for _, etiq := range etiquetasCandidatas {
+				frec := frecuencias[etiq]
 				if frec > maxFrec {
 					maxFrec = frec
 					mejorEtiqueta = etiq
@@ -380,25 +399,35 @@ func LabelPropagation[K comparable, W any](g grafo.Grafo[K, W], cmp func(K, K) b
 	return etiquetas
 }
 
-// ========================= METRICAS =========================
-
 // ClusteringVertice calcula coeficiente local.
 func ClusteringVertice[K comparable, W any](g grafo.Grafo[K, W], v K, cmp func(K, K) bool) float64 {
 	vecinos := g.ObtenerVecinos(v)
-	k := len(vecinos)
+
+	k := 0
+	for _, w := range vecinos {
+		if !cmp(v, w) {
+			k++
+		}
+	}
+
 	if k < 2 {
 		return 0.0
 	}
 
 	vecinosSet := TDADiccionario.CrearHash[K, bool](cmp)
 	for _, vec := range vecinos {
-		vecinosSet.Guardar(vec, true)
+		if !cmp(v, vec) {
+			vecinosSet.Guardar(vec, true)
+		}
 	}
 
 	aristas := 0
 	for _, w := range vecinos {
+		if cmp(v, w) {
+			continue
+		}
 		for _, x := range g.ObtenerVecinos(w) {
-			if cmp(w, x) {
+			if cmp(w, x) || cmp(v, x) {
 				continue
 			}
 			if vecinosSet.Pertenece(x) {
@@ -468,8 +497,6 @@ func CantidadEnRango[K comparable, W any](g grafo.Grafo[K, W], origen K, n int, 
 	return cantidad
 }
 
-// ========================= NAVEGACION Y LECTURA =========================
-
 // CicloLargoN busca ciclo de largo exacto N (Backtracking).
 func CicloLargoN[K comparable, W any](g grafo.Grafo[K, W], origen K, n int, cmp func(K, K) bool) []K {
 	visitados := TDADiccionario.CrearHash[K, bool](cmp)
@@ -509,7 +536,7 @@ func Lectura2am[K comparable, W any](g grafo.Grafo[K, W], paginas []K, cmp func(
 		grados.Guardar(p, 0)
 		enSubconjunto.Guardar(p, true)
 	}
-	// Solo aristas internas
+
 	for _, v := range paginas {
 		for _, w := range g.ObtenerVecinos(v) {
 			if enSubconjunto.Pertenece(w) {
@@ -540,6 +567,7 @@ func Lectura2am[K comparable, W any](g grafo.Grafo[K, W], paginas []K, cmp func(
 	if len(orden) != len(paginas) {
 		return nil
 	}
+	invertirLista(orden)
 	return orden
 }
 
@@ -547,27 +575,21 @@ func Lectura2am[K comparable, W any](g grafo.Grafo[K, W], paginas []K, cmp func(
 func PrimerLink[K comparable, W any](g grafo.Grafo[K, W], origen K, cmp func(K, K) bool) []K {
 	camino := []K{origen}
 	actual := origen
-	visitados := TDADiccionario.CrearHash[K, bool](cmp)
 
 	for i := 0; i < 20; i++ {
-		visitados.Guardar(actual, true)
 		vecinos := g.ObtenerVecinos(actual)
 		if len(vecinos) == 0 {
 			break
 		}
 
 		siguiente := vecinos[0]
-		if visitados.Pertenece(siguiente) {
-			break
-		}
 
 		camino = append(camino, siguiente)
 		actual = siguiente
 	}
+
 	return camino
 }
-
-// ========================= AUXILIARES PRIVADOS =========================
 
 func reconstruirCamino[K comparable](padres TDADiccionario.Diccionario[K, K], origen, destino K) []K {
 	camino := []K{}
@@ -615,4 +637,10 @@ func bfsCompleto[K comparable, W any](g grafo.Grafo[K, W], origen K, cmp func(K,
 // Garantiza consistencia con el Grafo.
 func sonIguales[K comparable](a, b K) bool {
 	return a == b
+}
+
+func invertirLista[K any](lista []K) {
+	for i, j := 0, len(lista)-1; i < j; i, j = i+1, j-1 {
+		lista[i], lista[j] = lista[j], lista[i]
+	}
 }
