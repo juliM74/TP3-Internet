@@ -8,7 +8,7 @@ import (
 	"tp3/internet/estado"
 )
 
-// =============================   DISPATCHER PRINCIPAL  =============================
+// ============================= EL DESPACHADOR PRINCIPAL  =============================
 
 func EjecutarLinea(est estado.Estado, comando string, parametros string) {
 
@@ -80,6 +80,11 @@ func ejecutarCamino(est estado.Estado, parametros string) {
 	origen := strings.TrimSpace(parts[0])
 	destino := strings.TrimSpace(parts[1])
 
+	if !est.Grafo().Pertenece(origen) || !est.Grafo().Pertenece(destino) {
+		fmt.Println("No se encontro recorrido")
+		return
+	}
+
 	camino := biblioteca.CaminoMinimoBFS(est.Grafo(), origen, destino, strings.EqualFold)
 
 	if camino == nil {
@@ -142,6 +147,11 @@ func ejecutarConectados(est estado.Estado, parametros string) {
 
 	pagina := strings.TrimSpace(parametros)
 
+	if !est.Grafo().Pertenece(pagina) {
+		// Si no existe, no imprimimos nada
+		return
+	}
+
 	if est.TieneCFC(pagina) {
 		for _, v := range est.ObtenerCFC(pagina) {
 			fmt.Println(v)
@@ -157,7 +167,7 @@ func ejecutarConectados(est estado.Estado, parametros string) {
 	}
 }
 
-// ======================================== ciclo (DFS bounded) ========================================
+// ======================================== ciclo ========================================
 
 func ejecutarCiclo(est estado.Estado, parametros string) {
 
@@ -169,6 +179,11 @@ func ejecutarCiclo(est estado.Estado, parametros string) {
 
 	pagina := strings.TrimSpace(parts[0])
 	n, _ := strconv.Atoi(strings.TrimSpace(parts[1]))
+
+	if !est.Grafo().Pertenece(pagina) {
+		fmt.Println("No se encontro recorrido")
+		return
+	}
 
 	ciclo := biblioteca.CicloLargoN(est.Grafo(), pagina, n, strings.EqualFold)
 
@@ -186,13 +201,17 @@ func ejecutarCiclo(est estado.Estado, parametros string) {
 	fmt.Println()
 }
 
-// ======================================== lectura (Topo restringido) ========================================
+// ======================================== lectura ========================================
 
 func ejecutarLectura(est estado.Estado, parametros string) {
 
 	parts := strings.Split(parametros, ",")
 	for i := range parts {
 		parts[i] = strings.TrimSpace(parts[i])
+		if !est.Grafo().Pertenece(parts[i]) {
+			fmt.Println("No existe forma de leer las paginas en orden")
+			return
+		}
 	}
 
 	orden := biblioteca.Lectura2am(est.Grafo(), parts, strings.EqualFold)
@@ -222,7 +241,7 @@ func ejecutarDiametro(est estado.Estado) {
 	fmt.Println("Costo:", len(camino)-1)
 }
 
-// ======================================== rango (BFS depth) ========================================
+// ======================================== rango (BFS) ========================================
 
 func ejecutarRango(est estado.Estado, parametros string) {
 
@@ -239,7 +258,7 @@ func ejecutarRango(est estado.Estado, parametros string) {
 	fmt.Println(cant)
 }
 
-// ======================================== comunidad (Label Propagation) ========================================
+// ======================================== comunidad ========================================
 
 func ejecutarComunidad(est estado.Estado, parametros string) {
 
@@ -269,8 +288,12 @@ func ejecutarComunidad(est estado.Estado, parametros string) {
 // ======================================== navegacion (Primer link) ========================================
 
 func ejecutarNavegacion(est estado.Estado, parametros string) {
-
 	origen := strings.TrimSpace(parametros)
+
+	if !est.Grafo().Pertenece(origen) {
+		fmt.Println(origen)
+		return
+	}
 
 	cam := biblioteca.PrimerLink(est.Grafo(), origen, strings.EqualFold)
 
@@ -285,7 +308,6 @@ func ejecutarNavegacion(est estado.Estado, parametros string) {
 // ======================================== clustering (local y global) ========================================
 
 func ejecutarClustering(est estado.Estado, parametros string) {
-
 	param := strings.TrimSpace(parametros)
 
 	// global
