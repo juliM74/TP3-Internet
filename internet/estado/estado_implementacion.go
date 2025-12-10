@@ -6,9 +6,7 @@ import (
 	TDADiccionario "tp3/tdaGrafo/tdas/hash/diccionario"
 )
 
-// =============================
-//   IMPLEMENTACIÓN DEL TDA ESTADO
-// =============================
+// =============================  IMPLEMENTACIÓN DEL TDA ESTADO  =============================
 
 type estadoConcreto struct {
 	grafo grafo.Grafo[string, int]
@@ -41,9 +39,7 @@ func NuevoEstado(g grafo.Grafo[string, int]) Estado {
 	}
 }
 
-// =============================
-//   MÉTODOS DE LA INTERFAZ
-// =============================
+// =============================  METODOS DE LA INTERFAZ  =============================
 
 // -------- GRAFO --------
 func (estado *estadoConcreto) Grafo() grafo.Grafo[string, int] {
@@ -66,10 +62,9 @@ func (estado *estadoConcreto) ObtenerPagerank(pagina string) (float64, bool) {
 	return estado.pagerank.Obtener(pagina), true
 }
 
-func (estado *estadoConcreto) IterarPagerank(visitar func(string, float64)) {
+func (estado *estadoConcreto) IterarPagerank(visitar func(string, float64) bool) {
 	estado.pagerank.Iterar(func(k string, v float64) bool {
-		visitar(k, v)
-		return true
+		return visitar(k, v)
 	})
 }
 
