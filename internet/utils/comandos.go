@@ -4,14 +4,11 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"tp3/internet/estado"  
-	"tp3/biblioteca"
+	biblioteca "tp3/biblioteca"
+	"tp3/internet/estado"
 )
 
-
-// ========================================
-//   DISPATCHER PRINCIPAL
-// ========================================
+// =============================   DISPATCHER PRINCIPAL  =============================
 
 func EjecutarLinea(est estado.Estado, comando string, parametros string) {
 
@@ -55,11 +52,7 @@ func EjecutarLinea(est estado.Estado, comando string, parametros string) {
 	}
 }
 
-
-
-// ========================================
-//   listar_operaciones (O(1))
-// ========================================
+// ======================================== listar_operaciones (O(1)) ========================================
 
 func ejecutarListarOperaciones() {
 	fmt.Println("camino")
@@ -74,11 +67,7 @@ func ejecutarListarOperaciones() {
 	fmt.Println("clustering")
 }
 
-
-
-// ========================================
-//   camino (BFS) ★
-// ========================================
+// ======================================== camino (BFS) ========================================
 
 func ejecutarCamino(est estado.Estado, parametros string) {
 
@@ -91,7 +80,7 @@ func ejecutarCamino(est estado.Estado, parametros string) {
 	origen := strings.TrimSpace(parts[0])
 	destino := strings.TrimSpace(parts[1])
 
-	camino := biblioteca.CaminoMinimoBFS(est.Grafo(), origen, destino)
+	camino := biblioteca.CaminoMinimoBFS(est.Grafo(), origen, destino, strings.EqualFold)
 
 	if camino == nil {
 		fmt.Println("No se encontro recorrido")
@@ -109,29 +98,34 @@ func ejecutarCamino(est estado.Estado, parametros string) {
 	fmt.Println("Costo:", len(camino)-1)
 }
 
+// ======================================== mas_importantes (PageRank) ========================================
 
-
-// ========================================
-//   mas_importantes (PageRank) ★★★
-// ========================================
+func cmpFloat(a, b float64) int {
+	if a < b {
+		return -1
+	}
+	if a > b {
+		return 1
+	}
+	return 0
+}
 
 func ejecutarMasImportantes(est estado.Estado, parametros string) {
-
 	n, err := strconv.Atoi(strings.TrimSpace(parametros))
 	if err != nil {
 		return
 	}
 
 	if !est.TienePagerank() {
-		pr := biblioteca.PageRank(est.Grafo())
-
-		for pag, val := range pr {
+		pr := biblioteca.PageRank(est.Grafo(), 0.85, 15, strings.EqualFold)
+		pr.Iterar(func(pag string, val float64) bool {
 			est.GuardarPagerank(pag, val)
-		}
+			return true
+		})
 		est.MarcarPagerankCalculado()
 	}
 
-	top := biblioteca.TopN(est, n)
+	top := biblioteca.TopN(est.IterarPagerank, n, cmpFloat)
 
 	for i := range top {
 		if i > 0 {
@@ -142,11 +136,7 @@ func ejecutarMasImportantes(est estado.Estado, parametros string) {
 	fmt.Println()
 }
 
-
-
-// ========================================
-//   conectados (CFC) ★★
-// ========================================
+// ======================================== conectados (CFC) ========================================
 
 func ejecutarConectados(est estado.Estado, parametros string) {
 
@@ -159,7 +149,7 @@ func ejecutarConectados(est estado.Estado, parametros string) {
 		return
 	}
 
-	cfc := biblioteca.CFCSoloDe(est.Grafo(), pagina)
+	cfc := biblioteca.CFCSoloDe(est.Grafo(), pagina, strings.EqualFold)
 	est.GuardarCFC(pagina, cfc)
 
 	for _, v := range cfc {
@@ -167,11 +157,7 @@ func ejecutarConectados(est estado.Estado, parametros string) {
 	}
 }
 
-
-
-// ========================================
-//   ciclo (DFS bounded) ★★★
-// ========================================
+// ======================================== ciclo (DFS bounded) ========================================
 
 func ejecutarCiclo(est estado.Estado, parametros string) {
 
@@ -184,7 +170,7 @@ func ejecutarCiclo(est estado.Estado, parametros string) {
 	pagina := strings.TrimSpace(parts[0])
 	n, _ := strconv.Atoi(strings.TrimSpace(parts[1]))
 
-	ciclo := biblioteca.CicloLargoN(est.Grafo(), pagina, n)
+	ciclo := biblioteca.CicloLargoN(est.Grafo(), pagina, n, strings.EqualFold)
 
 	if ciclo == nil {
 		fmt.Println("No se encontro recorrido")
@@ -200,11 +186,7 @@ func ejecutarCiclo(est estado.Estado, parametros string) {
 	fmt.Println()
 }
 
-
-
-// ========================================
-//   lectura (Topo restringido) ★★
-// ========================================
+// ======================================== lectura (Topo restringido) ========================================
 
 func ejecutarLectura(est estado.Estado, parametros string) {
 
@@ -213,7 +195,7 @@ func ejecutarLectura(est estado.Estado, parametros string) {
 		parts[i] = strings.TrimSpace(parts[i])
 	}
 
-	orden := biblioteca.Lectura2am(est.Grafo(), parts)
+	orden := biblioteca.Lectura2am(est.Grafo(), parts, strings.EqualFold)
 
 	if orden == nil {
 		fmt.Println("No existe forma de leer las paginas en orden")
@@ -223,15 +205,11 @@ func ejecutarLectura(est estado.Estado, parametros string) {
 	fmt.Println(strings.Join(orden, ", "))
 }
 
-
-
-// ========================================
-//   diametro (BFS desde todos) ★
-// ========================================
+// ======================================== diametro (BFS desde todos) ========================================
 
 func ejecutarDiametro(est estado.Estado) {
 
-	camino := biblioteca.Diametro(est.Grafo())
+	camino := biblioteca.Diametro(est.Grafo(), strings.EqualFold)
 
 	for i := range camino {
 		if i > 0 {
@@ -244,11 +222,7 @@ func ejecutarDiametro(est estado.Estado) {
 	fmt.Println("Costo:", len(camino)-1)
 }
 
-
-
-// ========================================
-//   rango (BFS depth) ★
-// ========================================
+// ======================================== rango (BFS depth) ========================================
 
 func ejecutarRango(est estado.Estado, parametros string) {
 
@@ -260,23 +234,23 @@ func ejecutarRango(est estado.Estado, parametros string) {
 	pagina := strings.TrimSpace(parts[0])
 	n, _ := strconv.Atoi(strings.TrimSpace(parts[1]))
 
-	cant := biblioteca.CantidadEnRango(est.Grafo(), pagina, n)
+	cant := biblioteca.CantidadEnRango(est.Grafo(), pagina, n, strings.EqualFold)
 
 	fmt.Println(cant)
 }
 
-
-
-// ========================================
-//   comunidad (Label Propagation) ★★
-// ========================================
+// ======================================== comunidad (Label Propagation) ========================================
 
 func ejecutarComunidad(est estado.Estado, parametros string) {
 
 	pagina := strings.TrimSpace(parametros)
 
 	if !est.TieneComunidades() {
-		biblioteca.LabelPropagation(est)
+		comunidades := biblioteca.LabelPropagation(est.Grafo(), strings.EqualFold)
+		comunidades.Iterar(func(p string, e int) bool {
+			est.GuardarEtiqueta(p, e)
+			return true
+		})
 		est.MarcarComunidadesCalculadas()
 	}
 
@@ -292,17 +266,13 @@ func ejecutarComunidad(est estado.Estado, parametros string) {
 	})
 }
 
-
-
-// ========================================
-//   navegacion (Primer link) ★
-// ========================================
+// ======================================== navegacion (Primer link) ========================================
 
 func ejecutarNavegacion(est estado.Estado, parametros string) {
 
 	origen := strings.TrimSpace(parametros)
 
-	cam := biblioteca.PrimerLink(est.Grafo(), origen)
+	cam := biblioteca.PrimerLink(est.Grafo(), origen, strings.EqualFold)
 
 	if len(cam) == 0 {
 		fmt.Println(origen)
@@ -312,11 +282,7 @@ func ejecutarNavegacion(est estado.Estado, parametros string) {
 	fmt.Println(strings.Join(cam, " -> "))
 }
 
-
-
-// ========================================
-//   clustering (local y global) ★★
-// ========================================
+// ======================================== clustering (local y global) ========================================
 
 func ejecutarClustering(est estado.Estado, parametros string) {
 
@@ -330,7 +296,7 @@ func ejecutarClustering(est estado.Estado, parametros string) {
 			return
 		}
 
-		val := biblioteca.ClusteringPromedio(est)
+		val := biblioteca.ClusteringPromedio(est.Grafo(), strings.EqualFold)
 		est.GuardarClusteringPromedio(val)
 
 		fmt.Printf("%.3f\n", val)
@@ -345,7 +311,7 @@ func ejecutarClustering(est estado.Estado, parametros string) {
 		return
 	}
 
-	val := biblioteca.ClusteringVertice(est.Grafo(), pagina)
+	val := biblioteca.ClusteringVertice(est.Grafo(), pagina, strings.EqualFold)
 	est.GuardarClusteringLocal(pagina, val)
 
 	fmt.Printf("%.3f\n", val)
